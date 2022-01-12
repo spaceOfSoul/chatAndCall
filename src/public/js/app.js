@@ -1,44 +1,53 @@
-const messageList = document.querySelector(".messageList");
-const messageForm = document.querySelector("#message");
-const nickForm = document.querySelector("#nickname");
+const socket = io();
 
-const socket = new WebSocket(`ws://${window.location.host}`);
+const selectRoom = document.querySelector("#welcom");
+const roomName_form = selectRoom.querySelector("form");
+const inRoom = document.getElementById("room");
 
-socket.addEventListener("open",()=>{
-    console.log("connect to server");
-});
+inRoom.hidden = true;
 
-socket.addEventListener("message", (message)=>{
-    const li = document.createElement("li");
-    li.innerText = message.data;
-    messageList.append(li);
-});
+let roomName;
 
-socket.addEventListener("close", ()=>{
-    console.log("Disconnect from Server.");
-});
-
-messageForm.addEventListener("submit", (e)=>{
+function handleMessageSubmit(e){
     e.preventDefault();
-    const input = messageForm.querySelector("input");
-    /*
+    const input = inRoom.querySelector("input");
+    const val = input.value;
+    socket.emit("new_message",roomName, val, ()=>{
+        addMessage(`You : ${val}`);
+    });
+    input.value = "";
+}
+
+function showRoom(){
+    selectRoom.hidden = true;
+    inRoom.hidden = false;
+    const h3 = room.querySelector("h3");
+    h3.innerText = `ROOM : ${roomName}`;
+
+    const form = inRoom.querySelector("form");
+    form.addEventListener("submit",handleMessageSubmit);
+}
+
+function addMessage(msg){
+    const ul = inRoom.querySelector("ul");
     const li = document.createElement("li");
-    li.innerText = `You : ${input.value}`;
-    messageList.append(li);
-    */
-    socket.send(JSON.stringify({
-        type:"new_message",
-        payload: input.value
-    }));
+    li.innerText = msg;
+    ul.appendChild(li);
+}
+
+roomName_form.addEventListener("submit",(e)=>{
+    e.preventDefault();
+    const input = roomName_form.querySelector("input");
+    socket.emit("enter_room",input.value,showRoom);
+    roomName = input.value;
     input.value = "";
 });
 
-nickForm.addEventListener("submit",(e)=>{
-    e.preventDefault();
-    const input = nickForm.querySelector("input");
-
-    socket.send(JSON.stringify({
-        type:"nickname",
-        payload: input.value
-    }));
+socket.on("welcome",()=>{
+    addMessage("someone Joined");
 });
+
+socket.on("left",()=>{
+    addMessage("someone left");
+});
+socket.on("new_message",addMessage);
