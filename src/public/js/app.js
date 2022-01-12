@@ -7,6 +7,7 @@ const inRoom = document.getElementById("room");
 inRoom.hidden = true;
 
 let roomName;
+let nickName;
 
 function handleMessageSubmit(e){
     e.preventDefault();
@@ -37,17 +38,20 @@ function addMessage(msg){
 
 roomName_form.addEventListener("submit",(e)=>{
     e.preventDefault();
-    const input = roomName_form.querySelector("input");
-    socket.emit("enter_room",input.value,showRoom);
+    const input = roomName_form.querySelector("#roomname");
+    const nickInput = roomName_form.querySelector("#nickname");
     roomName = input.value;
+    nickName = nickInput.value;
+    socket.emit("nickname",nickName);
+    socket.emit("enter_room",roomName,showRoom);
     input.value = "";
 });
 
-socket.on("welcome",()=>{
-    addMessage("someone Joined");
+socket.on("welcome",(user)=>{
+    addMessage(`${user} is joined!`);
 });
 
-socket.on("left",()=>{
-    addMessage("someone left");
+socket.on("left",(user)=>{
+    addMessage(`${user} has left.`);
 });
 socket.on("new_message",addMessage);
