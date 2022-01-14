@@ -9,6 +9,8 @@ inRoom.hidden = true;
 let roomName;
 let nickName;
 
+socket.emit("browserOn");
+
 function handleMessageSubmit(e){
     e.preventDefault();
     const input = inRoom.querySelector("input");
@@ -36,6 +38,11 @@ function addMessage(msg){
     ul.appendChild(li);
 }
 
+function refreshRoomInfo(count){
+    const h3 = room.querySelector("h3");
+    h3.innerText = `ROOM : ${roomName} (${count})`;
+}
+
 roomName_form.addEventListener("submit",(e)=>{
     e.preventDefault();
     const input = roomName_form.querySelector("#roomname");
@@ -47,11 +54,26 @@ roomName_form.addEventListener("submit",(e)=>{
     input.value = "";
 });
 
-socket.on("welcome",(user)=>{
+socket.on("welcome",(user,count)=>{
+    refreshRoomInfo(count);
     addMessage(`${user} is joined!`);
 });
 
-socket.on("left",(user)=>{
+socket.on("left",(user,count)=>{
+    refreshRoomInfo(count);
     addMessage(`${user} has left.`);
 });
 socket.on("new_message",addMessage);
+
+socket.on("room_change", (rooms)=>{
+    const roomList = selectRoom.querySelector("ul");
+    roomList.innerHTML = "";
+    if(rooms.length === 0){
+        return;
+    }
+    rooms.forEach(room => {
+        const li = document.createElement("li");
+        li.innerText = room;
+        roomList.append(li);
+    });
+});

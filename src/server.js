@@ -1,6 +1,8 @@
 import http from "http";
 import express from "express";
-import SocketIO from 'socket.io';
+import {Server} from 'socket.io';
+const { instrument } = require("@socket.io/admin-ui");
+import { publicDecrypt } from "crypto";
 const app = express();
 
 app.set("view engine", "pug");
@@ -16,24 +18,56 @@ app.get("/*", (_,res) =>{
 const handleListen = () => console.log(`Listening on http://localhost:3000`);
 
 const httpServer = http.createServer(app);
-const io = SocketIO(httpServer);
+const io = new Server(httpServer, {
+    cors: {
+      origin: ["https://admin.socket.io"],
+      credentials: true
+    }
+  });
+
+instrument(io, {
+    auth: false
+});
+
+function publicRoom(){
+    const {
+        sockets:{
+            adapter: {sids, rooms},
+        },
+    } = io;
+    const publicRooms = [];
+    rooms.forEach((_,key) =>{
+        if(sids.get(key) === undefined){
+            publicRooms.push(key);
+        }
+    })
+    return publicRooms;
+}
+
+function countRoom(roomName){
+    return io.sockets.adapter.rooms.get(roomName)?.size;
+}
 
 io.on("connection",(socket)=>{
     socket["nickname"] = "annonymous";
     socket.onAny((e)=>{
-        console.log(io.sockets.adapter);
         console.log(e);
     });
+    socket.on("browserOn",()=>io.sockets.emit("room_change",publicRoom()));
     socket.on("enter_room",(roomname, showRoom)=>{
         socket.join(roomname);
         showRoom();
-        socket.to(roomname).emit("welcome",socket.nickname);
+        socket.to(roomname).emit("welcome",socket.nickname,countRoom(roomname));
+        io.sockets.emit("room_change",publicRoom());
     });
     socket.on("disconnecting",()=>{
         socket.rooms.forEach(room => {
-            socket.to(room).emit("left",socket.nickname);
+            socket.to(room).emit("left",socket.nickname,countRoom(room)-1);
         });
     });
+    socket.on("disconnect",()=>{
+        io.sockets.emit("room_change",publicRoom());
+    })
     socket.on("new_message",(roomname,msg, done)=>{
         socket.to(roomname).emit("new_message",`${socket.nickname} : ${msg}`);
         done();
