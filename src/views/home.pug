@@ -4,24 +4,16 @@ html(lang="en")
         meta(charset="UTF-8")
         meta(http-equiv="X-UA-Compatible", content="IE=edge")
         meta(name="viewport", content="width=device-width, initial-scale=1.0")
-        title chat 
+        title vedio
         link(rel="stylesheet", href="https://unpkg.com/mvp.css")
     body 
         header 
              h1 asdf
         main 
-            div#welcom
-                form
-                    input#nickname(placeholder="Write nickname.", type = "text", required)
-                    input#roomname(placeholder="room name", required, type = "text")
-                    button Enter Room
-                h4 Open rooms 
-                    ul
-            div#room
-                h3
-                ul
-                form
-                    input(placeholder="message", required, type = "text")
-                    button Send
+            div#myStream
+                video#myFace(autoplay,playsinline, muted, width="400", height="400")
+                button#mute Mute
+                button#camera CameraOff
+                select#cameras
         script(src="/socket.io/socket.io.js") 
         script(src="/public/js/app.js") 
