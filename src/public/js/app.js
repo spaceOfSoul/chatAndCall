@@ -4,10 +4,16 @@ const myFace = document.getElementById("myFace");
 const muteBtn = document.getElementById("mute");
 const cameraBtn = document.getElementById("camera");
 const camerasList = document.getElementById("cameras");
+const maindoor = document.getElementById("maindoor");
+const call = document.getElementById("call");
+
+call.hidden = true;
 
 let mystream;
 let muted = false;
 let cameraOff = false;
+let roomName;
+let myPeerConnection;
 
 async function getCamera(){
     try {
@@ -49,8 +55,6 @@ async function getMedia(cameraId){
     }
 }
 
-getMedia();
-
 function handleMuteButn(){
     mystream.getAudioTracks().forEach(track => {
         track.enabled = !track.enabled;
@@ -80,6 +84,52 @@ async function cameraSelect(){
     await getMedia(camerasList.value);
 }
 
+async function initCall(){
+    maindoor.hidden = true;
+    call.hidden = false;
+    await getMedia();
+    makeConnection();
+}
+
 muteBtn.addEventListener("click", handleMuteButn);
 cameraBtn.addEventListener("click", handleCameraButn);
 camerasList.addEventListener("input",cameraSelect);
+
+const maindoorForm = maindoor.querySelector("form");
+maindoorForm.addEventListener("submit", async (e)=>{
+    e.preventDefault();
+    const input = maindoor.querySelector("input");
+    await initCall();
+    socket.emit("join_room", input.value);
+    roomName = input.value;
+    input.value="";
+});
+
+//socket
+socket.on("welcome", async ()=>{//send
+    const offer = await myPeerConnection.createOffer();
+    myPeerConnection.setLocalDescription(offer);
+    console.log("sent the offer");
+    console.log(offer);
+    socket.emit("offer", offer, roomName);
+});
+
+socket.on("offer", async(offer)=>{//reception
+    myPeerConnection.setRemoteDescription(offer);
+    const answer = await myPeerConnection.createAnswer();
+    console.log(answer);
+    myPeerConnection.setLocalDescription(answer);
+    socket.emit("answer", answer, roomName);
+});
+
+socket.on("answer", (answer)=>{
+    myPeerConnection.setRemoteDescription(answer);
+});
+
+//RTC
+function makeConnection(){
+    myPeerConnection = new RTCPeerConnection();
+    mystream
+        .getTracks()
+        .forEach((track) => myPeerConnection.addTrack(track, mystream));
+}
