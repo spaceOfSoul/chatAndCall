@@ -42,7 +42,7 @@ async function getMedia(cameraId){
     const cameraConstrains = {
         audio: true,
         video: { deviceId: { exact: cameraId } },
-    }
+    };
     try{
         mystream = await navigator.mediaDevices.getUserMedia(
             cameraId ? cameraConstrains : initialConstrains
@@ -57,13 +57,14 @@ async function getMedia(cameraId){
 
 function handleMuteButn(){
     mystream.getAudioTracks().forEach(track => {
+        console.log(track);
         track.enabled = !track.enabled;
     });
     if(!muted){
-        muteBtn.innerText = "unmute";
+        muteBtn.innerText = "Mic On";
         muted = true;
     }else{
-        muteBtn.innerText = "Mute";
+        muteBtn.innerText = "MIC Off";
         muted = false;
     }
 }
@@ -71,7 +72,7 @@ function handleCameraButn(){
     mystream.getVideoTracks().forEach(track => {
         track.enabled = !track.enabled;
     });
-    if(!muted){
+    if(!cameraOff){
         cameraBtn.innerText = "CameraOn";
         cameraOff = true;
     }else{
